@@ -1,7 +1,12 @@
 node_modules/
 .DS_Store
 .planning/
-supabase/
+
+# ob1-deploy fork: upstream ignores supabase/ wholesale, but we track the deploy
+# scaffold here. Ignore only CLI scratch + local deploy env. (Cannot re-include with
+# !supabase/functions/ once the parent dir is ignored, so we edit the pattern instead.)
+supabase/.temp/
+.env.deploy
 
 # Maintainer-local overlays (not part of upstream contribution contract)
 .local/
