@@ -25,17 +25,24 @@ Supabase edge function can be redeployed and upgraded reproducibly.
   scaffold and ignore only `supabase/.temp/` + `.env.deploy`.
 - `supabase/functions/open-brain-mcp/` — the deployed MCP server: a verbatim copy of
   upstream `server/index.ts` **plus** two delimited `LOCAL ADDITION` blocks grafting the
-  `update_thought` and `delete_thought` tools (adapted from `integrations/*-thought-mcp/`),
-  with `deno.json` copied verbatim from `server/deno.json`.
-- `supabase/functions/household-knowledge/` — kept in sync from the **live** download (not
-  upstream `extensions/`), for reproducible redeploys. Not modified by this upgrade.
+  `update_thought` and `delete_thought` tools (adapted from `integrations/*-thought-mcp/`,
+  with a zod-4 `z.record(z.string(), z.unknown())` fix and a required `confirm: true`
+  guard on delete), with `deno.json` copied verbatim from `server/deno.json`.
+  **This is the only function on this (pushed) branch** — it is built from public upstream
+  and contains nothing private.
 - `scripts/` — `preflight.sql` (read-only introspection), `migrate.sql` (additive, gated),
-  `rollback.sql` (filed; normally unused).
+  `rollback.sql` (optional teardown; normally unused).
+
+The live sources of the other deployed functions (`household-knowledge`, `ingest-thought`)
+are retained ONLY on the local-only `pre-upgrade-snapshot` branch and are never pushed.
 
 ## Deployed functions (names only)
 
-- `open-brain-mcp` — core MCP server (8 tools after upgrade).
-- `household-knowledge` — extension (5 tools). **Untouched by this upgrade.**
+- `open-brain-mcp` — core MCP server (8 tools after upgrade). **Redeployed by this upgrade.**
+- `household-knowledge` — extension (5 tools; separate in-function auth). **Untouched.**
+- `ingest-thought` — Slack capture webhook that inserts into `thoughts`. **Untouched.**
+  (Relevant to backups: it is a live write path — pause the Slack capture channel during
+  any before/after row-count verification.)
 
 ## Function secrets (names only — set in Supabase, project-scoped)
 
