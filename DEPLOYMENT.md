@@ -82,6 +82,27 @@ git switch ob1-deploy;  git merge main
 # Re-copy server/index.ts over the scaffold, re-apply the two LOCAL ADDITION blocks
 # (delimiters make this mechanical), then:
 npx -y deno@2 check supabase/functions/open-brain-mcp/index.ts
-# Review the diff, check upstream docs for any NEW migrations (gate before running SQL),
-# then deploy (gate).
+# Review the diff, check upstream docs for any NEW migrations (gate before running SQL;
+# new tables need explicit grants — see below), then deploy (gate).
 ```
+
+## New tables need explicit grants (from 2026-10-30)
+
+From 2026-10-30 Supabase no longer auto-grants Data API access on **new** tables in
+`public`; existing tables keep their grants. A table created after that date without
+grants is unreachable from the edge functions — they call PostgREST as `service_role`,
+which bypasses RLS but **not** table privileges — and every call fails with
+`permission denied` (the error names the missing `GRANT`).
+
+This applies to every `CREATE TABLE` in `public`, whatever the source: a custom
+extension, the SQL editor, the CLI, or an upstream `schema.sql`. Most inherited upstream
+schemas already grant, but these do not: all six `extensions/*/schema.sql`,
+`schemas/readwise-books`, `recipes/vercel-neon-telegram`. In the same migration as the
+table:
+
+```sql
+grant select, insert, update, delete on public.<table> to service_role;
+```
+
+Grant `anon` / `authenticated` only if a client reads the table directly (this
+deployment's edge functions never do). Background: supabase discussion #45329.
